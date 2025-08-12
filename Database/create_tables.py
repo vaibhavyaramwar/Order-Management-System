@@ -1,75 +1,39 @@
-import sqlite3
+from sqlalchemy import create_engine, Column, Integer, String, Float, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import relationship
 
-'''
-create table order and product
-refer Modules/Product/model/Product.py and Modules/Order/model/Order.py
-'''
+Base = declarative_base()
 
 def create_tables():
-    conn = sqlite3.connect('ecommerce.db')
-    cursor = conn.cursor()
+    engine = create_engine('sqlite:///ecommerce.db')
+    Base.metadata.create_all(engine)
 
-    # Create Product table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Product (
-            product_id INTEGER PRIMARY KEY,
-            sku TEXT NOT NULL UNIQUE,
-            product_name TEXT NOT NULL,
-            price REAL NOT NULL CHECK(price > 0),
-            stock_quantity INTEGER NOT NULL CHECK(stock_quantity >= 0),
-            created_at TEXT NOT NULL
-        )
-    ''')
+class Product(Base):
+    __tablename__ = 'Product'
 
-    # Create Order table
-    cursor.execute('''
-        CREATE TABLE IF NOT EXISTS Order (
-            order_id INTEGER PRIMARY KEY,
-            product_id INTEGER NOT NULL,
-            quantity INTEGER NOT NULL CHECK(quantity > 0),
-            status TEXT NOT NULL,
-            created_at TEXT NOT NULL,
-            FOREIGN KEY (product_id) REFERENCES Product(product_id)
-        )
-    ''')
+    product_id = Column(Integer, primary_key=True, autoincrement=True)
+    sku = Column(String, nullable=False, unique=True)
+    product_name = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
+    stock_quantity = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False)
 
-    conn.commit()
-    conn.close()
+    __table_args__ = (
+        CheckConstraint('price > 0', name='check_price_positive'),
+        CheckConstraint('stock_quantity >= 0', name='check_stock_non_negative'),
+    )
 
-def check_if_tables_exist():
-    conn = sqlite3.connect('ecommerce.db')
-    cursor = conn.cursor()      
+class Order(Base):
+    __tablename__ = 'Order'
 
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='Product'")
-    product_exists = cursor.fetchone() is not None
+    order_id = Column(Integer, primary_key=True, autoincrement=True)
+    product_id = Column(Integer, ForeignKey('Product.product_id'), nullable=False)
+    quantity = Column(Integer, nullable=False)
+    status = Column(String, nullable=False)
+    created_at = Column(DateTime, nullable=False)
 
-    cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name='Order'")
-    order_exists = cursor.fetchone() is not None
+    product = relationship('Product')
 
-    conn.close()
-    
-    return product_exists, order_exists
-
-def insert_product(product):
-    conn = sqlite3.connect('ecommerce.db')
-    cursor = conn.cursor()
-
-    cursor.execute('''
-        INSERT INTO Product (product_id, sku, product_name, price, stock_quantity, created_at)
-        VALUES (?, ?, ?, ?, ?, ?)
-    ''', (product.product_id, product.sku, product.product_name, product.price, product.stock_quantity, product.created_at))
-
-    conn.commit()
-    conn.close()
-
-def insert_order(order):
-    conn = sqlite3.connect('ecommerce.db')
-    cursor = conn.cursor()
-
-    cursor.execute('''
-        INSERT INTO Order (order_id, product_id, quantity, status, created_at)
-        VALUES (?, ?, ?, ?, ?)
-    ''', (order.order_id, order.product_id, order.quantity, order.status, order.created_at))
-
-    conn.commit()
-    conn.close()
+    __table_args__ = (
+        CheckConstraint('quantity > 0', name='check_quantity_positive'),
+    )
