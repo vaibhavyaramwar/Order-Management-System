@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, validator ,Extra
 
 '''
 price should be greater than 0
@@ -17,6 +17,9 @@ class Product(BaseModel):
     price: float = Field(..., gt=0,description="Price of the product")
     stock_quantity: int = Field(..., gteq=0,description="Quantity of the product available in stock")
     created_at: str = Field(..., description="Date when the product was added")
+
+    class Config:
+        extra = Extra.forbid  # This will reject unknown fields
 
 @validator('product_name')
 def product_name_must_not_be_empty(cls, value: str) -> str:

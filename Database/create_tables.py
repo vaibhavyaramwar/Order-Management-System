@@ -49,3 +49,27 @@ def check_if_tables_exist():
     conn.close()
     
     return product_exists, order_exists
+
+def insert_product(product):
+    conn = sqlite3.connect('ecommerce.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        INSERT INTO Product (product_id, sku, product_name, price, stock_quantity, created_at)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ''', (product.product_id, product.sku, product.product_name, product.price, product.stock_quantity, product.created_at))
+
+    conn.commit()
+    conn.close()
+
+def insert_order(order):
+    conn = sqlite3.connect('ecommerce.db')
+    cursor = conn.cursor()
+
+    cursor.execute('''
+        INSERT INTO Order (order_id, product_id, quantity, status, created_at)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (order.order_id, order.product_id, order.quantity, order.status, order.created_at))
+
+    conn.commit()
+    conn.close()
