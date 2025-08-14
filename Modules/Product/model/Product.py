@@ -13,7 +13,7 @@ created_at should be a valid date format
 class Product(BaseModel):
     product_id: int = Field(..., description="Unique identifier for the product")
     sku: str = Field(..., description="Stock Keeping Unit for the product")
-    product_name: str = Field(..., ,description="Name of the product")
+    product_name: str = Field(...,description="Name of the product")
     price: float = Field(..., gt=0,description="Price of the product")
     stock_quantity: int = Field(..., gteq=0,description="Quantity of the product available in stock")
     created_at: str = Field(..., description="Date when the product was added")

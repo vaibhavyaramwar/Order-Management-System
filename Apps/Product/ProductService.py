@@ -1,5 +1,4 @@
 from fastapi import FastAPI, HTTPException,status, Query
-from typing import List
 
 from Modules.Product.model import Product
 from Database import ProductDb, create_tables
