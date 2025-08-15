@@ -16,8 +16,8 @@ app = FastAPI()
 def create_product(product: ProductBO.ProductBO):
     session = get_database_session()
     try:
-        if not session.query(ProductDb.Product).filter(ProductDb.Product.sku == product.sku).first():
-            new_product = ProductDb.Product(
+        if not session.query(OrderDb.Product).filter(OrderDb.Product.sku == product.sku).first():
+            new_product = OrderDb.Product(
                 sku=product.sku,
                 product_name=product.product_name,
                 price=product.price,
@@ -67,7 +67,7 @@ def get_products(limit: int = 10, offset: int = 0):
 def get_product_by_id(product_id: int):
     session = get_database_session()
     try:
-        product = session.query(ProductDb.Product).filter(ProductDb.Product.product_id == product_id).first()
+        product = session.query(OrderDb.Product).filter(OrderDb.Product.product_id == product_id).first()
 
         if not product:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
@@ -81,10 +81,10 @@ def get_product_by_id(product_id: int):
 def delete_product(product_id: int):
     session = get_database_session()
     try:
-        product = session.query(ProductDb.Product).filter(ProductDb.Product.product_id == product_id).first()
+        product = session.query(OrderDb.Product).filter(OrderDb.Product.product_id == product_id).first()
 
         if not product:
-            return CommonResponseUtil.create_common_response("FAILURE", "Product not found", {}, status_code=status.HTTP_404_NOT_FOUND)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Product not found")
 
         session.delete(product)
         session.commit()
