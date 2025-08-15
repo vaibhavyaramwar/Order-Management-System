@@ -1,18 +1,13 @@
 from fastapi import FastAPI, HTTPException, status
 from sqlalchemy.exc import IntegrityError
-from Database import OrderDb, ProductDb, create_tables, get_database_session
+from Database import OrderDb, ProductDb, get_database_session
 from Utils import CommonResponseUtil
-from Modules.Order.model.Order import StatusUpdate
+from Modules.Order.model.OrderBO import StatusUpdate
 
 app = FastAPI()
 
 @app.post("/orders", status_code=status.HTTP_201_CREATED)
 def create_order(order: OrderDb.Order):
-    """
-    Create a new order and atomically reduce stock.
-    :param order: Order object containing order details.
-    :return: Success message with order details or error if stock is insufficient.
-    """
     session = get_database_session()
     try:
         # Start a transaction

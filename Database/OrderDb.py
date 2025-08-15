@@ -1,7 +1,6 @@
-from sqlalchemy import create_engine, Column, Integer, String, DateTime, ForeignKey, CheckConstraint
+from sqlalchemy import create_engine, Column, Integer, String, Float,DateTime, ForeignKey, CheckConstraint
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
-from transitions import Machine
 
 Base = declarative_base()
 
@@ -9,6 +8,18 @@ def get_database_session():
     engine = create_engine('sqlite:///ecommerce.db')
     Session = sessionmaker(bind=engine)
     return Session()
+
+class Product(Base):
+    __tablename__ = 'Product'
+
+    product_id = Column(Integer, primary_key=True, autoincrement=True)
+    sku = Column(String, nullable=False)
+    product_name = Column(String, nullable=False)
+    price = Column(Float, nullable=False)
+    stock_quantity = Column(Integer, nullable=False)
+    created_at = Column(DateTime, nullable=False)
+
+Base.metadata.create_all(create_engine('sqlite:///ecommerce.db'))
 
 class Order(Base):
     __tablename__ = 'Order'
@@ -24,51 +35,49 @@ class Order(Base):
     __table_args__ = (
         CheckConstraint('quantity > 0', name='check_quantity_positive'),
     )
+Base.metadata.create_all(create_engine('sqlite:///ecommerce.db'))
+
+def insert_product(product):
+    session = get_database_session()
+    session.add(product)
+    session.commit()
+    session.close()
+
+def get_products(limit=10, offset=0):
+    session = get_database_session()
+    products = session.query(Product).limit(limit).offset(offset).all()
+    session.close()
+    return products
+
+def get_total_product_count():
+    session = get_database_session()
+    total_count = session.query(Product).count()
+    session.close()
+    return total_count
+
+def delete_product_by_id(product_id: int):
+    session = get_database_session()
+    product = session.query(Product).filter(Product.product_id == product_id).first()
+    if product:
+        session.delete(product)
+        session.commit()
+    session.close()
+
+def update_product_by_id(product_id: int, product_data):
+    session = get_database_session()
+    product = session.query(Product).filter(Product.product_id == product_id).first()
+    if product:
+        product.sku = product_data.sku
+        product.product_name = product_data.product_name
+        product.price = product_data.price
+        product.stock_quantity = product_data.stock_quantity
+        product.created_at = product_data.created_at
+        session.commit()
+    session.close()
+    
 
 def insert_order(order):
     session = get_database_session()
     session.add(order)
     session.commit()
     session.close()
-
-class OrderStateMachine:
-    states = ['PENDING', 'PROCESSING', 'COMPLETED', 'CANCELLED']
-
-    def __init__(self, initial_state='PENDING'):
-        self.state = initial_state
-
-        # Initialize the state machine
-        self.machine = Machine(model=self, states=OrderStateMachine.states, initial=initial_state)
-
-        # Define transitions
-        self.machine.add_transition(trigger='process', source='PENDING', dest='PROCESSING')
-        self.machine.add_transition(trigger='complete', source='PROCESSING', dest='COMPLETED')
-        self.machine.add_transition(trigger='cancel', source=['PENDING', 'PROCESSING'], dest='CANCELLED')
-
-def update_order_status_with_state_machine(order_id: int, action: str):
-    """
-    Update the status of an order using a state machine.
-    :param order_id: ID of the order to update.
-    :param action: Action to perform (e.g., 'process', 'complete', 'cancel').
-    """
-    session = get_database_session()
-    try:
-        order = session.query(Order).filter(Order.order_id == order_id).first()
-
-        if not order:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Order not found")
-
-        # Initialize the state machine with the current order status
-        state_machine = OrderStateMachine(initial_state=order.status)
-
-        # Perform the action
-        if not hasattr(state_machine, action):
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Invalid action")
-
-        getattr(state_machine, action)()
-
-        # Update the order status
-        order.status = state_machine.state
-        session.commit()
-    finally:
-        session.close()
